@@ -15,7 +15,7 @@
 </p>
 
 <p><a href="#crear-proyecto">Crear desde cero</a> · <a href="#estructura">Explorar el proyecto</a> · <a href="#ejecutar">Ejecutar un test</a> · <a href="#problemas">Resolver un error</a></p>
-<p><sub>20 capítulos · Ejemplos explicados · Configuración real · Lectura desplegable</sub></p>
+<p><sub>21 capítulos · Ejemplos explicados · Configuración real · Lectura desplegable</sub></p>
 
 </div>
 
@@ -33,6 +33,7 @@ No necesitas leer todo de una vez. Elige una ruta y abre el capítulo que necesi
 | **Aprender desde cero** | [01 · Selenium](#selenium) | [03 · Windows](#windows) → [05 · Proyecto](#crear-proyecto) → [11 · Primer test](#primer-test) |
 | **Entender este repositorio** | [08 · Estructura](#estructura) | [09 · Clases](#clases) → [15 · Page Objects](#page-objects) |
 | **Preparar Eclipse** | [02 · Entorno](#entorno) | [04 · Eclipse](#eclipse) → [07 · Importar](#importar) |
+| **Entender la creación y cierre del navegador** | [21 · Drivers paso a paso](#drivers) | [09 · Clases](#clases) → [19 · Problemas](#problemas) |
 | **Correr o reparar un test** | [17 · Ejecutar](#ejecutar) | [13 · Esperas](#esperas) → [14 · Aserciones](#aserciones) → [19 · Problemas](#problemas) |
 
 **El recorrido completo**
@@ -47,12 +48,12 @@ No necesitas leer todo de una vez. Elige una ruta y abre el capítulo que necesi
 | | | [13 · Esperas](#esperas) | |
 | | | [14 · Aserciones](#aserciones) | |
 | | | [15 · Page Objects](#page-objects) | |
-| | | [16 · Interacciones](#interacciones) | |
+| | | [16 · Interacciones](#interacciones) | [21 · Drivers](#drivers) |
 
 > **Cómo aprovechar cada capítulo**<br>
 > Lee su objetivo, abre el subtema que necesitas y termina con la pregunta de práctica. Los ejemplos completos y los fragmentos didácticos se identifican en su explicación.
 
-**Sobre esta guía.** Documentación preparada el **12 de octubre de 2026**, a partir del código, configuraciones locales y chats anteriores. Las etiquetas muestran versiones verificadas; Java 17 es el objetivo del proyecto, mientras que el JDK de terminal es 25.0.4.1. Los ejemplos de mejora no implican cambios ya aplicados al código.
+**Sobre esta guía.** Documentación preparada el **12 de octubre de 2026** y actualizada el **13 de octubre de 2026**, a partir del código, configuraciones locales y chats anteriores. Las etiquetas muestran versiones verificadas; Java 17 es el objetivo del proyecto, mientras que el JDK de terminal es 25.0.4.1. Los ejemplos de mejora no implican cambios ya aplicados al código.
 
 </details>
 
@@ -763,7 +764,11 @@ seleniumBasic/
 │       │   │       ├── AddTransactionModal.java
 │       │   │       └── TrasactionsTable.java
 │       │   ├── Models/TransactionInfo.java
-│       │   ├── Utils/Photorapher.java
+│       │   ├── Utils/
+│       │   │   ├── Photorapher.java
+│       │   │   └── driver/
+│       │   │       ├── DriverFactory.java
+│       │   │       └── DriverManager.java
 │       │   └── resources/wallpaper.png
 │       └── resources/screenshots/transactions.png
 └── target/
@@ -870,7 +875,7 @@ No edites `.class` para cambiar una prueba: modifica su fuente `.java`. Las imá
 <summary><strong>09 · Cada clase, explicada</strong></summary>
 
 > **Al terminar este capítulo**<br>
-> Reconocer las responsabilidades y el estado actual de los trece archivos Java.
+> Reconocer las responsabilidades y el estado actual de los quince archivos Java presentes en el proyecto local.
 
 <details>
 <summary><strong>9.1 SeleniumBasicApplication.java</strong></summary>
@@ -948,7 +953,7 @@ El último usa fecha 14/04/24, monto 1000 y descripción Este es un test. Captur
 
 Ubicación: src/test/java/pageobjects/base. Clase abstract que no se instancia directamente; driver, wait y photorapher son protected para las subclases.
 
-@BeforeEach crea ChromeDriver, wait de 10 segundos y Photorapher. @AfterEach comprueba driver != null y hace quit.
+@BeforeEach selecciona el navegador mediante DriverFactory, llama createDriver(), registra la sesión en DriverManager y prepara wait de 10 segundos y Photorapher. @AfterEach delega el cierre en DriverManager.quit(). El gestor actual no comprueba null antes de cerrar; consulta [21 · Drivers paso a paso](#drivers).
 
 Solo LoginAndTransactionTest hereda esta base actualmente. NavigationTest/WaitStrategiesTest tienen su propio ciclo y MercadoLibre usa try/catch/finally.
 
@@ -1014,6 +1019,21 @@ La ruta es relativa al directorio de trabajo. takePhoto("transactions") produce 
 </details>
 
 
+<details>
+<summary><strong>9.14 DriverFactory.java</strong></summary>
+
+Ubicación: src/test/java/Utils/driver. Enum con CHROME y EDGE. Cada opción implementa createDriver() y devuelve una sesión nueva del navegador elegido. La declaración abstracta exige que las opciones implementen ese método. Seleccionar CHROME con valueOf todavía no crea la sesión; createDriver() sí la crea.
+
+</details>
+
+<details>
+<summary><strong>9.15 DriverManager.java</strong></summary>
+
+Ubicación: src/test/java/Utils/driver. Conserva la referencia del WebDriver del hilo actual mediante ThreadLocal. setDriver registra la sesión; getDriver la recupera; quit cierra la sesión y después remove elimina la referencia. El constructor privado impide crear instancias desde otras clases; sus métodos son static.
+
+Estas dos clases se encontraron como archivos locales nuevos. Su explicación completa y sus límites están en [21 · Drivers paso a paso](#drivers).
+
+</details>
 > **Ponlo en práctica** · Sigue la llamada desde LoginAndTransactionTest hasta TrasactionsTable.
 
 [↑ Volver al mapa](#mapa)
@@ -1872,7 +1892,7 @@ El mapa de refactor y el historial permiten relacionar:
 
 Los documentos .qa y chats usan nombres de su momento. Para correr hoy, usa los comandos de sección 17.
 
-Las notas antiguas dicen que no había Git. Hoy sí existe .git; el estado inicial estaba limpio. No se hizo commit para este README.
+Las notas antiguas dicen que no había Git. Hoy existe .git y la guía visual inicial quedó en el commit 5d0fa67. El cierre del chat anterior se interrumpió antes del push; esta continuación retoma la documentación y su publicación en junior. Las clases nuevas de drivers y los cambios locales de Java se describen como estado del equipo, no como archivos incluidos en el commit de documentación.
 
 </details>
 
@@ -1899,6 +1919,8 @@ Las notas antiguas dicen que no había Git. Hoy sí existe .git; el estado inici
 
 | Síntoma | Qué revisar |
 | --- | --- |
+| Optional<Enum.EnumDesc<DriverFactory>> no se puede convertir a WebDriver | Se llamó describeConstable() en lugar de createDriver(); sección 21.7 |
+| setDriver/quit undefined para DriverManager | Import incorrecto: java.sql.DriverManager en vez de Utils.driver.DriverManager; sección 21.7 |
 | java/mvn no reconocido | Path, JAVA_HOME y nueva terminal; Get-Command |
 | Import Selenium/JUnit rojo | pom, Update Project, descargas y Problems |
 | NoSuchElementException | Página actual, selector, escritura de etiqueta y momento de búsqueda |
@@ -1924,6 +1946,7 @@ Lee el tipo de excepción y la primera línea del stack trace que apunta a una c
 
 Esto describe el código actual, sin aplicar modificaciones:
 
+- DriverManager.quit() no protege el caso sin sesión y remove() no se ejecuta si quit() lanza una excepción; sección 21.9.
 - HTML externo y rutas fijadas al equipo.
 - Login directo y Page Object sin assertion final.
 - Transacción POM compara solo monto y supone fila 1.
@@ -1970,7 +1993,7 @@ Por eso mvn test completo no garantiza que todos los ejercicios estén terminado
 6. Inspecciona HTML; prueba un ID, CSS y XPath.
 7. Distingue By de WebElement.
 8. Lee/ejecuta solo readMessageWithExplicitWait y entiende su condición.
-9. Sigue BaseWebTest hasta LoginPage.
+9. Sigue BaseWebTest, DriverFactory y DriverManager en la sección 21; después sigue LoginPage.
 10. Sigue una transacción hasta TransactionInfo y la assertion.
 11. Lee cantidad/nombres ejecutados en JUnit y Console.
 12. Revisa limitaciones antes de ampliar ejercicios.
@@ -2005,3 +2028,322 @@ La documentación oficial puede mostrar versiones diferentes. Para reproducir es
 </details>
 
 ---
+
+---
+
+<a id="drivers"></a>
+
+<details>
+<summary><strong>21 · Drivers paso a paso: entiende el error de este chat</strong></summary>
+
+> **Al terminar este capítulo**<br>
+> Explicar cómo una opción de navegador se convierte en una sesión, dónde se guarda y cómo se cierra. Leer los errores de compilación sin perderse entre sus tipos.
+
+Empieza por **21.1**, sigue la línea desglosada en **21.3** y después revisa **21.7** para conectar el código con el error que apareció. Los fragmentos explican el código local observado el 13 de octubre de 2026. Las mejoras se señalan como propuestas.
+
+<details>
+<summary><strong>21.1 Tres responsabilidades y una misma sesión</strong></summary>
+
+Antes BaseWebTest creaba Chrome directamente. Ahora delega esa creación y registra la referencia para poder recuperarla desde el mismo hilo de ejecución.
+
+| Componente | Responsabilidad | Ejemplo |
+| --- | --- | --- |
+| BaseWebTest | Coordina preparación y cierre antes/después del test | setUp(), tearDown() |
+| DriverFactory | Crea una sesión según la opción elegida | CHROME.createDriver() |
+| DriverManager | Guarda, recupera y cierra la sesión del hilo actual | setDriver(), getDriver(), quit() |
+| LoginPage y otros Page Objects | Usan la sesión recibida para actuar sobre la página | new LoginPage(driver) |
+
+```mermaid
+flowchart TD
+    J["JUnit: antes de cada test"] --> B["BaseWebTest.setUp()"]
+    B --> F["DriverFactory.CHROME.createDriver()"]
+    F --> D["Una sesión WebDriver"]
+    D --> M["DriverManager.setDriver(driver)"]
+    D --> W["WebDriverWait y Photorapher"]
+    M --> T["Test y Page Objects usan esa sesión"]
+    W --> T
+    T --> A["JUnit: después del test"]
+    A --> Q["DriverManager.quit(): cerrar y retirar referencia"]
+```
+
+Asignar driver a otra variable o pasarlo a un constructor conserva la referencia a la misma sesión. Solo una nueva llamada a createDriver() inicia otra. En este proyecto LoginAndTransactionTest hereda este flujo; las demás clases de pruebas conservan sus mecanismos propios.
+
+</details>
+
+<details>
+<summary><strong>21.2 WebDriver, enum, factory y override sin misterio</strong></summary>
+
+**WebDriver** es la interfaz que define las operaciones del navegador. ChromeDriver y EdgeDriver la implementan. Por eso una variable WebDriver puede guardar el resultado de new ChromeDriver() o new EdgeDriver().
+
+**Enum** significa enumeración: define opciones con nombres concretos. Aquí las opciones son CHROME y EDGE. El nombre **factory** expresa que este componente crea los objetos que necesita el test; no es una instrucción especial de Java.
+
+Este es el enum presente en el proyecto, con formato simplificado:
+
+```java
+public enum DriverFactory {
+    CHROME {
+        @Override
+        public WebDriver createDriver() {
+            return new ChromeDriver();
+        }
+    },
+    EDGE {
+        @Override
+        public WebDriver createDriver() {
+            return new EdgeDriver();
+        }
+    };
+
+    public abstract WebDriver createDriver();
+}
+```
+
+`public abstract WebDriver createDriver()` declara el contrato: el método debe devolver WebDriver. No incluye cuerpo porque cada opción proporciona el suyo. `@Override` indica que esa opción implementa el método declarado. `return` entrega el objeto creado al código que llamó el método.
+
+No se usa new DriverFactory(): se elige una constante del enum y se llama a su método.
+
+</details>
+
+<details>
+<summary><strong>21.3 Desarma la línea que crea Chrome</strong></summary>
+
+```java
+driver = DriverFactory.valueOf(DEFAULT_BROWSER.toUpperCase()).createDriver();
+```
+
+La constante DEFAULT_BROWSER contiene "chrome". Lee la expresión desde dentro hacia fuera:
+
+| Paso | Expresión | Resultado |
+| --- | --- | --- |
+| 1 | DEFAULT_BROWSER | String con "chrome" |
+| 2 | DEFAULT_BROWSER.toUpperCase() | String con "CHROME" |
+| 3 | DriverFactory.valueOf("CHROME") | Constante DriverFactory.CHROME |
+| 4 | DriverFactory.CHROME.createDriver() | WebDriver creado con new ChromeDriver() |
+| 5 | driver = resultado | El atributo del test guarda esa referencia |
+
+La misma idea escrita con variables intermedias, como ejemplo didáctico:
+
+```java
+String browserName = DEFAULT_BROWSER.toUpperCase();
+DriverFactory browserFactory = DriverFactory.valueOf(browserName);
+driver = browserFactory.createDriver();
+```
+
+valueOf busca el nombre exacto de la constante; una opción inexistente produce IllegalArgumentException. No abre el navegador. Cambiar "chrome" a "edge" seleccionaría EDGE, que requiere Edge disponible en el entorno. No se comprobó una ejecución con Edge.
+
+</details>
+
+<details>
+<summary><strong>21.4 Qué hace DriverManager y qué significa static</strong></summary>
+
+```java
+private static final ThreadLocal<WebDriver> driver = new ThreadLocal<>();
+```
+
+| Parte | Significado en esta clase |
+| --- | --- |
+| private | El contenedor se accede desde DriverManager |
+| static | El contenedor pertenece a la clase |
+| final | La referencia al contenedor no se reasigna |
+| ThreadLocal<WebDriver> | El contenedor guarda una referencia WebDriver por hilo |
+| new ThreadLocal<>() | Crea el contenedor; todavía no crea un navegador |
+
+Los métodos static se llaman con el nombre de la clase: DriverManager.setDriver(driver). El constructor privado evita crear gestores con new DriverManager().
+
+```java
+public static void setDriver(WebDriver driver) {
+    DriverManager.driver.set(driver);
+}
+```
+
+En este método hay dos usos del nombre driver: el parámetro es la sesión recibida; DriverManager.driver es el contenedor de la clase. set guarda el parámetro para el hilo actual. No crea ni copia el navegador.
+
+```java
+public static WebDriver getDriver() {
+    return driver.get();
+}
+```
+
+get devuelve la sesión registrada para el hilo actual. Si todavía no se registró una, devuelve null en esta implementación. Aunque getDriver existe, los Page Objects observados siguen recibiendo driver por constructor; ese contrato se conserva.
+
+</details>
+
+<details>
+<summary><strong>21.5 Hilo del chat y ThreadLocal son conceptos distintos</strong></summary>
+
+En la conversación, **hilo** puede significar este chat. En Java, un **hilo de ejecución** es una secuencia de trabajo dentro del programa. ThreadLocal se refiere al segundo significado.
+
+Imagina que el runner ejecuta pruebas en dos hilos:
+
+```text
+Hilo A: setDriver(sesionA) → getDriver() devuelve sesionA
+Hilo B: setDriver(sesionB) → getDriver() devuelve sesionB
+```
+
+Hay un contenedor static compartido, pero cada hilo consulta su propio valor. Un WebDriver static simple ofrecería una única referencia compartida y podría ser sobrescrito por otra prueba.
+
+ThreadLocal no configura paralelismo ni hace seguro compartir una misma sesión entre hilos. Tampoco garantiza que otro hilo vea el valor registrado en el primero. Preparación, uso y limpieza deben respetar el contexto en que se guardó la sesión. La revisión no comprobó ejecución paralela.
+
+La documentación de Java describe este almacenamiento y los métodos get, set y remove en [ThreadLocal, Java 17](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ThreadLocal.html).
+
+</details>
+
+<details>
+<summary><strong>21.6 Preparación y limpieza: sigue el orden</strong></summary>
+
+Fragmento equivalente al flujo local de BaseWebTest; se omiten el comentario antiguo y un punto y coma aislado sin efecto:
+
+```java
+@BeforeEach
+public void setUp() {
+    driver = DriverFactory.valueOf(DEFAULT_BROWSER.toUpperCase()).createDriver();
+    DriverManager.setDriver(driver);
+    wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    photorapher = new Photorapher(driver);
+}
+
+@AfterEach
+public void tearDown() {
+    DriverManager.quit();
+}
+```
+
+Primero se crea la sesión, después se registra y finalmente se preparan los objetos que la usan. WebDriverWait necesita recibir una sesión válida. Photorapher captura esa misma sesión. El test heredado se ejecuta entre estos dos métodos del ciclo de JUnit.
+
+El quit actual del gestor hace lo siguiente:
+
+```java
+public static void quit() {
+    DriverManager.driver.get().quit();
+    driver.remove();
+}
+```
+
+get recupera la sesión; quit cierra la sesión del navegador; remove retira la referencia del hilo. Son dos tareas distintas. remove por sí solo no cierra Chrome, y cerrar Chrome por sí solo no limpia el contenedor.
+
+</details>
+
+<details>
+<summary><strong>21.7 El error original, explicado mensaje por mensaje</strong></summary>
+
+**Primer mensaje:** Type mismatch: cannot convert from Optional&lt;Enum.EnumDesc&lt;DriverFactory&gt;&gt; to WebDriver.
+
+La línea original terminaba así:
+
+```java
+driver = DriverFactory.valueOf(DEFAULT_BROWSER.toUpperCase()).describeConstable();
+```
+
+describeConstable es un método heredado de Enum. Devuelve una descripción de la constante dentro de un Optional, que representa un valor que puede estar presente o ausente. Ese resultado tiene un tipo distinto al WebDriver esperado por el atributo. Su contrato figura en [Enum.describeConstable(), Java 17](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#describeConstable()).
+
+La corrección usa el método del proyecto que devuelve el tipo requerido:
+
+```java
+driver = DriverFactory.valueOf(DEFAULT_BROWSER.toUpperCase()).createDriver();
+```
+
+Ni extraer el Optional con get() ni forzar una conversión crea el navegador: hay que llamar createDriver().
+
+**Segundo mensaje:** The method setDriver(WebDriver) is undefined for the type DriverManager.
+
+**Mensaje de limpieza:** The method quit() is undefined for the type DriverManager.
+
+Ambos procedían del mismo import:
+
+```diff
+-import java.sql.DriverManager;
++import Utils.driver.DriverManager;
+```
+
+java.sql.DriverManager gestiona conexiones JDBC a bases de datos. La clase del proyecto Utils.driver.DriverManager declara setDriver y quit para WebDriver. Compartir el nombre corto no hace que ambas clases tengan los mismos métodos. Eclipse resolvía DriverManager usando el import equivocado.
+
+También evita confundir nuestro DriverManager con Selenium Manager, que participa en la resolución del ejecutable del navegador, o con la librería externa WebDriverManager. Este proyecto no incluye esa librería externa en el pom.
+
+</details>
+
+<details>
+<summary><strong>21.8 Lee el stack trace y reconoce un error de compilación</strong></summary>
+
+La traza que recibimos comenzaba con java.lang.Error: Unresolved compilation problems. Es evidencia de problemas de compilación en el código que el runner intentó ejecutar.
+
+| Fragmento de la traza | Cómo interpretarlo |
+| --- | --- |
+| BaseWebTest.setUp(BaseWebTest.java:24) | El problema se manifestó durante la preparación; revisa la expresión en esa línea de esa revisión |
+| Method.invoke y ArrayList.forEach | Llamadas del mecanismo que ejecuta los métodos; empieza por el archivo propio |
+| Suppressed | Fallo adicional asociado al principal |
+| BaseWebTest.tearDown(BaseWebTest.java:34) | La limpieza también falló, por la referencia al DriverManager equivocado |
+
+El fallo de tearDown no sustituye el de setUp: había que corregir la expresión y el import. Los números de línea pueden cambiar tras editar el archivo. En este caso el código original confirmó ambas incompatibilidades de manera determinista.
+
+Que se muestre una traza al ejecutar no significa que el problema sea un selector, una espera o la página HTML. Primero resuelve los errores indicados por el compilador.
+
+</details>
+
+<details>
+<summary><strong>21.9 Estado actual y mejora pendiente del cierre</strong></summary>
+
+Al retomar la documentación, BaseWebTest ya contenía createDriver() y el import Utils.driver.DriverManager. Esos cambios corrigen las dos incompatibilidades identificadas por lectura del código. Esta tarea solo modifica el README y no ejecutó compilación ni pruebas.
+
+El gestor actual tiene dos límites distintos al error original:
+
+- Si crear el navegador falla antes de setDriver, get devuelve null y la limpieza puede añadir un NullPointerException.
+- Si WebDriver.quit() lanza una excepción, la siguiente línea remove() no se alcanza.
+
+**Mejora propuesta, no aplicada:** sustituir el cuerpo de quit por un cierre que compruebe la referencia y retire el valor incluso cuando falle el cierre:
+
+```java
+public static void quit() {
+    WebDriver currentDriver = driver.get();
+    try {
+        if (currentDriver != null) {
+            currentDriver.quit();
+        }
+    } finally {
+        driver.remove();
+    }
+}
+```
+
+El if protege el caso sin sesión. finally limpia la referencia tanto si quit termina bien como si lanza una excepción; no oculta esa excepción. Esto requiere revisar y validar el cambio de Java por separado.
+
+</details>
+
+<details>
+<summary><strong>21.10 Cómo verificarlo y comprobar que lo entendiste</strong></summary>
+
+En Eclipse, guarda los archivos y revisa **Window → Show View → Problems**. Si persisten marcadores antiguos después de corregir el código, usa **Project → Clean** y revisa el resultado de la nueva compilación. Limpiar no corrige una línea todavía incorrecta.
+
+Desde PowerShell en la raíz del proyecto:
+
+```powershell
+mvn test-compile
+```
+
+Este comando compila fuentes y tests, genera archivos en target y puede resolver dependencias Maven. No ejecuta las pruebas de navegador. Si compila, habrás validado la compatibilidad del código, no el flujo de la aplicación.
+
+Para ejecutar después una prueba representativa del ciclo compartido:
+
+```powershell
+mvn "-Dtest=LoginAndTransactionTest#addTransactionWithPageObjects" test
+```
+
+Necesitas el HTML externo indicado en la sección 7 y Chrome disponible. La prueba usa login, crea una transacción en la página local y puede reemplazar transactions.png. Revisa que el reporte muestre el método esperado, sus assertions y cualquier fallo de preparación o limpieza. Estos comandos se documentan; no se ejecutaron en esta actualización.
+
+| Pregunta de práctica | Respuesta |
+| --- | --- |
+| ¿valueOf("CHROME") abre Chrome? | Todavía no; selecciona la constante |
+| ¿Qué llamada crea la sesión? | createDriver(), cuyo cuerpo usa new ChromeDriver() |
+| ¿setDriver abre otro navegador? | No; registra la referencia recibida |
+| ¿new LoginPage(driver) crea otra sesión? | No; recibe la existente |
+| ¿Por qué falló describeConstable? | Devuelve un Optional con un descriptor, mientras driver espera WebDriver |
+| ¿Por qué faltaban setDriver y quit? | El import seleccionaba java.sql.DriverManager |
+| ¿remove cierra el navegador? | No; retira el valor del hilo |
+| ¿Compilar demuestra que pasó el test? | No; hay que ejecutar el método y revisar su resultado |
+
+</details>
+
+> **Ponlo en práctica** · Explica con tus palabras: seleccionar → crear → registrar → usar → cerrar → retirar la referencia.
+
+[↑ Volver al mapa](#mapa)
+
+</details>
